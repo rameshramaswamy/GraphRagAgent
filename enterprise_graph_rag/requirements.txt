@@ -1,0 +1,33 @@
+llama-index>=0.10.0
+llama-index-graph-stores-neo4j
+llama-index-embeddings-openai
+llama-index-llms-openai
+neo4j>=5.18.0
+python-dotenv
+pydantic-settings
+pydantic>=2.0
+tenacity         # For retry logic
+structlog        # For enterprise JSON logging
+pytest           # For testing
+typer            # For CLI management
+langgraph
+langchain
+langchain-openai
+langgraph-checkpoint-postgres
+psycopg[binary]
+psycopg_pool
+langsmith           # Enterprise Observability
+pytest-asyncio
+redis
+presidio-analyzer
+presidio-anonymizer
+spacy
+prometheus-fastapi-instrumentator
+python-multipart
+slowapi # For rate limiting (optional but good for enterprise)
+websockets
+slowapi
+python-magic; sys_platform != 'win32'
+python-magic-bin; sys_platform == 'win32'
+python-jose[cryptography]
+passlib[bcrypt]

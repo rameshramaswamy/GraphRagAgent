@@ -1,0 +1,35 @@
+# Global Settings
+environment: production
+
+# Images
+images:
+  api: ghcr.io/my-org/enterprise-graph-rag/api:latest
+  worker: ghcr.io/my-org/enterprise-graph-rag/worker:latest
+
+# Secrets (In prod, use ExternalSecrets Operator)
+secrets:
+  openaiApiKey: "sk-..."
+  neo4jPass: "password"
+  postgresPass: "password"
+
+# Redis & Postgres & Neo4j config
+external:
+  neo4jUri: "bolt://neo4j.db-tier:7687"
+  redisUrl: "redis://redis.db-tier:6379/0"
+  postgresHost: "postgres.db-tier"
+
+# API Configuration
+api:
+  replicas: 3
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+
+# Worker Configuration
+worker:
+  replicas: 2
+  concurrency: 4

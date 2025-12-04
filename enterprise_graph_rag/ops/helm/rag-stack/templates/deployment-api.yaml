@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-api
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels:
+      app: rag-api
+  template:
+    metadata:
+      labels:
+        app: rag-api
+      annotations:
+        # Prometheus Scrape Config
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+    spec:
+      containers:
+      - name: api
+        image: {{ .Values.images.api }}
+        ports:
+        - containerPort: 8000
+        env:
+        - name: NEO4J_URI
+          value: {{ .Values.external.neo4jUri }}
+        - name: REDIS_URL
+          value: {{ .Values.external.redisUrl }}
+        - name: OPENAI_API_KEY
+          value: {{ .Values.secrets.openaiApiKey }}
+        - name: LANGCHAIN_TRACING_V2
+          value: "true" # Observability Enabled
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10

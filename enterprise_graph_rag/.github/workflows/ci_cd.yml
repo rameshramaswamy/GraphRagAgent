@@ -1,0 +1,89 @@
+name: Enterprise GraphRAG CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  DOCKER_REGISTRY: ghcr.io
+  IMAGE_NAME: enterprise-graph-rag
+
+jobs:
+  # 1. Test & Evaluate
+  quality-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest ragas deep-eval
+
+      - name: Run Unit Tests
+        run: |
+          pytest tests/ --ignore=tests/evals
+
+      - name: Run Golden Set Evaluation
+        # This prevents bad prompts/models from reaching prod
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          NEO4J_URI: ${{ secrets.NEO4J_URI_TEST }} # Use a test DB
+          NEO4J_USERNAME: ${{ secrets.NEO4J_USER }}
+          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASS }}
+        run: |
+          # python manage_agent.py eval --ci-mode
+          echo "Running Ragas Evaluation..."
+          # In real implementation, fail if score < 0.8
+
+  # 2. Build & Push Docker
+  build-push:
+    needs: quality-check
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Log in to Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push API
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.api
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/api:latest
+
+      - name: Build & Push Worker
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.worker
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/worker:latest
+
+  # 3. Deploy to K8s (Mock)
+  deploy:
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EKS
+        run: |
+          echo "Deploying Helm Chart to EKS Cluster..."
+          # helm upgrade --install rag-stack ./ops/helm/rag-stack

@@ -1,0 +1,19 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y libpq-dev gcc libmagic1 
+
+# Install spaCy model (needed for Presidio in Phase 2/3)
+RUN pip install spacy && python -m spacy download en_core_web_lg
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY . .
+
+# Run Celery Worker
+CMD ["celery", "-A", "services.worker.app.celery_app", "worker", "--loglevel=info", "-Q", "ingestion_queue,default", "-c", "2"]
